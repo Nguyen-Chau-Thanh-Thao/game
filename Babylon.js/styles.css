@@ -1,0 +1,15 @@
+/* style.css */
+
+body, html {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;  /* Ẩn thanh cuộn */
+  height: 100%;
+  width: 100%;
+}
+
+#renderCanvas {
+  width: 100%;   /* Chiếm toàn bộ chiều rộng của cửa sổ */
+  height: 100%;  /* Chiếm toàn bộ chiều cao của cửa sổ */
+  display: block;  /* Không có khoảng trắng dưới canvas */
+}

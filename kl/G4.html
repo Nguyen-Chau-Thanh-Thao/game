@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Game</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: lightgray;
+        }
+        #gameContainer {
+            width: 80vw;
+            height: 80vh;
+            border: 5px solid black;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            background: skyblue;
+            position: relative;
+        }
+        canvas {
+            display: none; /* Canvas ẩn khi đang chọn nhân vật */
+            margin: auto;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #characterSelection {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2;
+        }
+        .character {
+            width: 100px;
+            height: 100px;
+            margin: 10px;
+            border: 3px solid white;
+            border-radius: 10px;
+            cursor: pointer;
+            background-size: cover;
+            background-position: center;
+        }
+        .selected {
+            border: 3px solid gold;
+        }
+        #countdown {
+            display: none; /* Chỉ hiển thị sau khi chọn nhân vật */
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 50px;
+            color: white;
+            font-weight: bold;
+            text-shadow: 2px 2px 5px black;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="characterSelection">
+            <div class="character" id="char1" style="background-image: url('peppa.png');"></div>
+            <div class="character" id="char2" style="background-image: url('angry\ bird.png');"></div>
+            <div class="character" id="char3" style="background-image: url('labubu.png');"></div>
+            <div class="character" id="char4" style="background-image: url('Giahuy.png');"></div>
+            <div class="character" id="char5" style="background-image: url('wukong.png');"></div>
+        </div>
+        <div id="countdown">3</div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <script>
+        const gameContainer = document.getElementById("gameContainer");
+        const characterSelection = document.getElementById("characterSelection");
+        const countdownEl = document.getElementById("countdown");
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Điều chỉnh kích thước canvas dựa trên kích thước khung trò chơi
+        canvas.width = gameContainer.offsetWidth;
+        canvas.height = gameContainer.offsetHeight;
+
+        // Game variables
+        const bird = { 
+            x: canvas.width / 10, 
+            y: canvas.height / 3, 
+            width: canvas.width / 20, 
+            height: canvas.height / 20, 
+            gravity: 1, 
+            jump: -10, 
+            velocity: 0 
+        };
+        const pipes = [];
+        const pipeWidth = canvas.width / 15;
+        const gap = canvas.height / 4;
+        let frame = 0;
+        let score = 0;
+        let gameRunning = false;
+
+        let selectedCharacter = "labubu.png"; // Mặc định nhân vật đầu tiên
+
+        const pipeColor = "green";
+        const passedPipeColor = "red";
+
+        const birdImage = new Image();
+
+        // Xử lý khi người chơi chọn nhân vật
+        document.querySelectorAll(".character").forEach(character => {
+            character.addEventListener("click", function () {
+                document.querySelectorAll(".character").forEach(char => char.classList.remove("selected"));
+                this.classList.add("selected");
+                selectedCharacter = this.style.backgroundImage.slice(5, -2); // Lấy đường dẫn hình ảnh
+            });
+        });
+
+        // Bắt đầu trò chơi sau khi chọn nhân vật
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !gameRunning && characterSelection.style.display !== "none") {
+                characterSelection.style.display = "none";
+                countdownEl.style.display = "block";
+                birdImage.src = selectedCharacter;
+                startCountdown();
+            }
+        });
+
+        function drawBird() {
+            ctx.drawImage(birdImage, bird.x, bird.y, bird.width, bird.height);
+        }
+
+        function createPipe() {
+            const topHeight = Math.random() * (canvas.height / 2);
+            pipes.push({
+                x: canvas.width,
+                topHeight,
+                bottomHeight: canvas.height - topHeight - gap,
+                passed: false
+            });
+        }
+
+        function drawPipes() {
+            pipes.forEach(pipe => {
+                ctx.fillStyle = pipe.passed ? passedPipeColor : pipeColor;
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight);
+                ctx.fillRect(pipe.x, canvas.height - pipe.bottomHeight, pipeWidth, pipe.bottomHeight);
+                pipe.x -= canvas.width / 200;
+
+                if (!pipe.passed && bird.x > pipe.x + pipeWidth) {
+                    pipe.passed = true;
+                    score++;
+                }
+            });
+
+            if (pipes.length > 0 && pipes[0].x + pipeWidth < 0) {
+                pipes.shift();
+            }
+        }
+
+        function checkCollision() {
+            if (bird.y + bird.height >= canvas.height || bird.y <= 0) {
+                return true;
+            }
+
+            for (let pipe of pipes) {
+                if (
+                    bird.x < pipe.x + pipeWidth &&
+                    bird.x + bird.width > pipe.x &&
+                    (bird.y < pipe.topHeight || bird.y + bird.height > canvas.height - pipe.bottomHeight)
+                ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function updateGame() {
+            if (!gameRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+
+            drawBird();
+
+            if (frame % 120 === 0) createPipe();
+            drawPipes();
+
+            if (checkCollision()) {
+                gameRunning = false;
+                alert("Game Over! Score: " + score);
+                location.reload();
+            }
+
+            ctx.fillStyle = "black";
+            ctx.font = `${canvas.width / 25}px Arial`;
+            ctx.fillText("Score: " + score, 10, canvas.height / 20);
+
+            frame++;
+            requestAnimationFrame(updateGame);
+        }
+
+        document.addEventListener("keydown", () => {
+            if (!gameRunning) return;
+            bird.velocity = bird.jump;
+        });
+
+        function startCountdown() {
+            let countdown = 3;
+            countdownEl.textContent = countdown;
+
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown > 0) {
+                    countdownEl.textContent = countdown;
+                } else {
+                    clearInterval(countdownInterval);
+                    countdownEl.style.display = "none";
+                    canvas.style.display = "block";
+                    gameRunning = true;
+                    updateGame();
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

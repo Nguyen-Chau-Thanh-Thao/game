@@ -1,0 +1,19 @@
+/* Đảm bảo rằng phần tử game-container có kích thước phù hợp với game */
+#game-container {
+    width: 800px;
+    height: 600px;
+    margin: 0 auto;
+    border: 2px solid #fff;  /* Viền trắng xung quanh */
+}
+
+/* Phần tiêu đề game */
+h1 {
+    text-align: center;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+}
